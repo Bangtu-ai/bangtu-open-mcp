@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#071329" />
+  <meta name="description" content="帮图 MCP 官方接入页" />
+  <title>帮图 MCP · 让 AI 读懂图纸</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --blue: #1558c7;
+      --blue-dark: #123c86;
+      --cyan: #119f98;
+      --gem-black: #07101b;
+      --gem-blue: #021b52;
+      --gem-green: #013b32;
+      --green: #9bcf67;
+      --ink: #17243a;
+      --muted: #6d7b90;
+      --line: #e7edf5;
+      --cream: #fff4df;
+      --cream-shadow: #f3e5c9;
+      --paper: #ffffff;
+      --display: "Space Grotesk", "Noto Sans SC", sans-serif;
+      --body: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--ink); background: var(--paper); font-family: var(--body); letter-spacing: 0; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+
+    .page { overflow: hidden; min-height: 100vh; background: #fff; }
+    .wrap { width: min(1200px, calc(100% - 48px)); margin: 0 auto; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 28px 0; }
+    .logo { display: block; height: 50px; }
+    .logo img { display: block; height: 100%; width: auto; }
+    .topnav { display: flex; align-items: center; gap: 28px; color: #4f6178; font: 600 15px var(--display); }
+    .topnav a:hover { color: var(--blue); }
+    .live { display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; color: var(--blue); border: 1px solid #d9e5f6; background: #f6f9fe; font: 600 11px var(--display); }
+    .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px #e5f4d8; }
+
+    .hero { position: relative; display: grid; grid-template-columns: .82fr 1.18fr; gap: 32px; align-items: center; padding: 100px 0; }
+    .hero::before { content: ""; position: absolute; top: 70px; right: 0; width: 460px; height: 460px; border-radius: 50%; background: #f8fbff; z-index: 0; }
+    .hero-copy, .gem-stage { position: relative; z-index: 1; }
+    .kicker { display: flex; align-items: center; gap: 11px; margin: 0 0 22px; color: var(--blue); font: 700 14px var(--display); letter-spacing: .12em; text-transform: uppercase; }
+    .kicker::before { content: ""; width: 28px; height: 3px; background: var(--blue); box-shadow: 8px 0 var(--cyan); }
+    h1 { max-width: 470px; margin: 0; font: 700 clamp(38px, 5vw, 68px)/1.1 var(--display); letter-spacing: -.04em; }
+    h1 em { color: var(--blue); font-style: normal; }
+    .lede { max-width: 450px; margin: 23px 0 0; color: #4f6075; font-size: 19px; line-height: 1.8; }
+    .hero-links { display: flex; align-items: center; gap: 18px; margin-top: 30px; }
+    .text-link { color: var(--blue); font-size: 16px; font-weight: 700; }
+    .text-link::after { content: " ↗"; font-family: var(--display); }
+    .text-link:hover { color: var(--cyan); }
+
+    .gem-stage { display: grid; place-items: center; min-height: 400px; }
+    .gem-title { position: absolute; top: 15px; right: 140px; color: #7fb2ff; font: 700 12px var(--display); letter-spacing: .18em; text-shadow: 0 1px 0 rgba(8, 26, 53, .28); }
+    .gem-word { width: min(100%, 620px); filter: drop-shadow(12px 18px 0 rgba(21, 88, 199, .08)); }
+    .mcp-mosaic { display: block; width: 100%; height: auto; overflow: visible; }
+    .mosaic-triangle { stroke: rgba(255, 255, 255, .4); stroke-width: 2.5; stroke-linejoin: round; }
+    .gem-spark { position: absolute; width: 15px; height: 15px; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+    .spark-a { top: 13%; left: 7%; background: var(--gem-green); }
+    .spark-b { right: 7%; bottom: 19%; background: var(--gem-blue); width: 24px; height: 24px; }
+    .spark-c { left: 13%; bottom: 11%; background: var(--gem-black); width: 11px; height: 11px; }
+    .gem-caption { position: absolute; right: 0; bottom: 25px; color: var(--muted); font: 600 11px var(--display); letter-spacing: .08em; }
+
+    .connect-band { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: #fff; }
+    .section { width: min(1200px, calc(100% - 48px)); margin: 0 auto; padding: 80px 0; }
+    .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; margin-bottom: 36px; }
+    .section-head h2 { margin: 0; font: 700 32px var(--display); letter-spacing: -.03em; }
+    .section-head span { color: #65758c; font: 600 13px var(--display); letter-spacing: .12em; }
+    .connect-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .access-card { padding: 30px 30px 30px 0; }
+    .access-card + .access-card { padding: 30px 0 30px 30px; border-left: 1px solid var(--line); }
+    .access-card h3 { margin: 0 0 9px; font: 700 23px var(--display); }
+    .access-card small { display: block; color: #4f6075; font-size: 16px; line-height: 1.75; }
+    .code-box {
+      position: relative;
+      overflow: auto;
+      margin: 22px 0 0;
+      padding: 21px 21px 21px 25px;
+      color: #dceeff;
+      background: #0d1d31;
+      font: 14px/1.8 var(--display);
+      border-left: 4px solid var(--blue);
+    }
+    .code-box .key { color: #78d7d1; }
+    .code-box .string { color: #b9d9ff; }
+    .code-box .api-key-placeholder { color: #ff7373; font-weight: 700; }
+    .card-actions { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
+    .primary-btn,
+    .doc-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 18px;
+      border: 1px solid var(--blue);
+      border-radius: 3px;
+      color: #fff;
+      background: var(--blue);
+      font: 700 13px var(--display);
+      cursor: pointer;
+      transition: background .2s ease, border-color .2s ease, color .2s ease;
+    }
+    .primary-btn:hover,
+    .doc-link:hover { border-color: var(--blue-dark); background: var(--blue-dark); }
+    .notice { margin: 17px 0 0; color: #52637a; font-size: 14px; line-height: 1.85; }
+    .support { padding: 80px 0; }
+    .support-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 88px; }
+    .tools-section { padding: 0 0 80px 0; }
+    .tools-intro { max-width: 700px; margin-bottom: 30px; }
+    .tools-intro h2 { margin: 0 0 12px; font: 700 29px var(--display); }
+    .tools-intro p { margin: 0; color: #4f6075; font-size: 17px; line-height: 1.85; }
+    .tool-list { border-top: 1px solid var(--line); }
+    .tool-row { display: grid; grid-template-columns: 285px 1fr; gap: 32px; padding: 21px 0; border-bottom: 1px solid var(--line); }
+    .tool-name { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; color: var(--blue-dark); font: 700 14px/1.5 var(--display); }
+    .tool-name code { color: var(--blue); font: inherit; }
+    .price-tag { display: inline-flex; align-items: center; min-height: 22px; padding: 0 7px; border: 1px solid #b9d8f5; border-radius: 4px; color: #23649b; background: #eef7ff; font: 600 11px/1 var(--body); white-space: nowrap; }
+    .price-tag.limited { border-color: #f1c58f; color: #a35a16; background: #fff6e8; }
+    .tool-desc { color: #56677d; font-size: 14px; line-height: 1.75; }
+    .support h2 { margin: 0 0 14px; font: 700 29px var(--display); letter-spacing: -.03em; }
+    .support p { max-width: 560px; margin: 0; color: #4f6075; font-size: 17px; line-height: 1.9; }
+    .doc-link { margin-top: 22px; }
+    .capabilities { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+    .capabilities div { min-height: 108px; padding: 20px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: #fff; }
+    .capabilities b { display: block; margin-bottom: 8px; font: 700 17px var(--display); }
+    .capabilities span { color: #56677d; font-size: 14px; line-height: 1.75; }
+    footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 30px 0; border-top: 1px solid var(--line); color: #6d7d91; font: 600 13px var(--display); }
+    .footer-links { display: flex; gap: 18px; }
+    .footer-links a:hover { color: var(--blue); }
+
+    @media (max-width: 820px) {
+      .wrap { width: min(100% - 32px, 620px); }
+      .topnav a { display: none; }
+      .logo { width: 148px; }
+      .hero { grid-template-columns: 1fr; min-height: auto; padding: 80px 0; }
+      .gem-stage { min-height: 370px; order: -1; }
+      .gem-word { transform: scale(.88); }
+      .gem-title { top: 0; }
+      .section { width: min(100% - 32px, 620px); padding: 80px 0; }
+      .connect-layout, .support-grid { grid-template-columns: 1fr; gap: 20px; }
+      .tool-row { grid-template-columns: 1fr; gap: 6px; }
+      .tool-row { grid-template-columns: 1fr; gap: 6px; }
+      .access-card, .access-card + .access-card { padding: 26px 0; border-left: 0; }
+      .access-card + .access-card { border-top: 1px solid var(--line); }
+      .support { padding: 80px 0; }
+      footer { align-items: flex-start; flex-direction: column; }
+    }
+    @media (max-width: 460px) {
+      .gem-stage { min-height: 280px; }
+      .gem-word { transform: scale(.82); }
+      .lede { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="wrap topbar">
+      <a class="logo" href="https://www.bangtu-ai.com" target="_blank" rel="noreferrer" aria-label="帮图科技"><img src="/logo.png" alt="帮图科技 BANGTU TECHNOLOGY" /></a>
+      <nav class="topnav"><a href="#connect">接入文档</a><a href="https://apidoc.bangtu-ai.com" target="_blank" rel="noreferrer">API 文档</a><span class="live"><i></i> SERVICE ONLINE</span></nav>
+    </header>
+
+    <main>
+      <section class="wrap hero">
+        <div class="hero-copy">
+          <p class="kicker">BANGTU / OPEN MCP</p>
+          <h1>让 AI<br /><em>读懂每一张图纸</em></h1>
+          <p class="lede">帮图 MCP，把 DWG 图纸解析能力接入你的 AI 工作流。一个地址，开始连接。</p>
+          <div class="hero-links"><a class="text-link" href="#connect">查看接入方式</a><a class="text-link" href="https://apidoc.bangtu-ai.com" target="_blank" rel="noreferrer">API 文档</a></div>
+        </div>
+        <div class="gem-stage" aria-label="MCP gemstone pixel logo">
+          <span class="gem-title">DRAWING INTELLIGENCE</span>
+          <span class="gem-spark spark-a"></span><span class="gem-spark spark-b"></span><span class="gem-spark spark-c"></span>
+          <div class="gem-word" aria-label="MCP">
+            <svg class="mcp-mosaic" viewBox="0 0 720 270" role="img" aria-label="MCP 彩色三角宝石拼片">
+              <defs>
+                <clipPath id="mcp-letter-mask">
+                  <text x="18" y="212" font-family="Arial, sans-serif" font-size="232" font-weight="800" letter-spacing="-8">MCP</text>
+                </clipPath>
+              </defs>
+              <g clip-path="url(#mcp-letter-mask)">
+                <text x="18" y="212" fill="#082a62" font-family="Arial, sans-serif" font-size="232" font-weight="800" letter-spacing="-8">MCP</text>
+                <polygon class="mosaic-triangle" fill="#062b6b" points="0,0 170,0 55,142" />
+                <polygon class="mosaic-triangle" fill="#0a5b9f" points="170,0 290,0 188,154" />
+                <polygon class="mosaic-triangle" fill="#00806f" points="290,0 446,0 348,116" />
+                <polygon class="mosaic-triangle" fill="#273d88" points="446,0 585,0 502,149" />
+                <polygon class="mosaic-triangle" fill="#126bb2" points="585,0 720,0 664,137" />
+                <polygon class="mosaic-triangle" fill="#b14375" points="0,0 55,142 0,270" />
+                <polygon class="mosaic-triangle" fill="#d56b39" points="55,142 188,154 102,270" />
+                <polygon class="mosaic-triangle" fill="#176f9b" points="188,154 348,116 270,270" />
+                <polygon class="mosaic-triangle" fill="#2d754f" points="348,116 502,149 432,270" />
+                <polygon class="mosaic-triangle" fill="#0b4e86" points="502,149 664,137 576,270" />
+                <polygon class="mosaic-triangle" fill="#7d3c78" points="664,137 720,0 720,270" />
+                <polygon class="mosaic-triangle" fill="#0751a8" points="0,270 102,270 55,142" />
+                <polygon class="mosaic-triangle" fill="#008d78" points="102,270 270,270 188,154" />
+                <polygon class="mosaic-triangle" fill="#253d86" points="270,270 432,270 348,116" />
+                <polygon class="mosaic-triangle" fill="#be4b65" points="432,270 576,270 502,149" />
+                <polygon class="mosaic-triangle" fill="#c55f35" points="576,270 720,270 664,137" />
+              </g>
+            </svg>
+          </div>
+          <span class="gem-caption">MODEL CONTEXT PROTOCOL</span>
+        </div>
+      </section>
+
+      <div class="connect-band">
+        <section class="section" id="connect">
+          <div class="section-head"><h2>连接帮图 MCP</h2></div>
+          <div class="connect-layout">
+            <article class="access-card">
+              <h3>客户端配置</h3>
+              <small>将 apiKey 替换为你的专属调用凭证。(如有需要生成专属 apiKey 请联系客服)</small>
+              <pre class="code-box" id="client-config">{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"bangtu-api"</span>: {
+      <span class="key">"url"</span>: <span class="string">"https://mcp.bangtu-ai.com/mcp"</span>,
+      <span class="key">"apiKey"</span>: <span class="string api-key-placeholder">"请填入您的apiKey"</span>
+    }
+  }
+}</pre>
+              <div class="card-actions"><button class="primary-btn" data-copy-block="client-config">复制客户端配置</button></div>
+              <p class="notice">每次工具调用均通过 apiKey 识别客户并完成服务计量。</p>
+            </article>
+            <article class="access-card">
+              <h3>测试客户端配置</h3>
+              <small>用于评估阶段快速验证图纸解析与 MCP 工具调用流程。</small>
+              <pre class="code-box" id="test-config">{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"bangtu-api-test"</span>: {
+      <span class="key">"url"</span>: <span class="string">"https://mcp.bangtu-ai.com/mcp"</span>,
+      <span class="key">"apiKey"</span>: <span class="string">"btzlbnfhwr1dkndirgq5h6gy3838b8rh"</span>
+    }
+  }
+}</pre>
+              <div class="card-actions"><button class="primary-btn" data-copy-block="test-config">复制测试配置</button></div>
+              <p class="notice">产品定价正在定制中。测试客户端配置将在价格公布后失效，正式使用请切换至专属 apiKey。</p>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <section class="wrap support">
+        <div class="support-grid">
+          <div>
+            <h2>让图纸数据成为 AI 可调用的能力</h2>
+            <p>帮图专注工程图纸智能解析，将 DWG 图纸中的图框、构件与专业数据转化为结构化结果。通过 MCP，智能体可以在工程设计、审查与数据提取流程中直接调用这些能力。</p>
+            <a class="doc-link" href="https://apidoc.bangtu-ai.com" target="_blank" rel="noreferrer">查看 API 文档 ↗</a>
+          </div>
+          <div class="capabilities">
+            <div><b>图纸预处理</b><span>上传 DWG，创建可追踪的解析任务。</span></div>
+            <div><b>任务管理</b><span>掌握异步任务进度与结果状态。</span></div>
+            <div><b>图框识别</b><span>读取图框、图层与基础图纸信息。</span></div>
+            <div><b>结构化解析</b><span>提取建筑专业构件与图纸数据。</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap tools-section" id="tools">
+        <div class="tools-intro">
+          <h2>帮图 MCP 工具</h2>
+          <p>围绕 DWG 图纸解析任务设计的工具集。智能体可以按“创建任务、等待完成、读取结果”的流程调用，无需自行拼接上游接口路径。</p>
+        </div>
+        <div class="tool-list">
+          <div class="tool-row"><div class="tool-name"><code>bangtu_create_dwg_task</code><span class="price-tag">免费</span></div><div class="tool-desc">上传 DWG 图纸并创建基本信息识别任务，返回 taskId。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_create_cv_task</code><span class="price-tag limited">限时免费</span></div><div class="tool-desc">根据已完成任务的 frameId 创建建筑专业构件识别任务。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_get_task_status</code><span class="price-tag">免费</span></div><div class="tool-desc">查询异步任务状态，判断任务是否 RUNNING、SUCCESS 或 FAILED。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_wait_task</code><span class="price-tag">免费</span></div><div class="tool-desc">在一次调用中按间隔等待任务完成，适合短时间等待场景。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_get_frame_result</code><span class="price-tag">免费</span></div><div class="tool-desc">获取图框、图签和坐标等 DWG 基础解析结果。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_get_arch_result</code><span class="price-tag">免费</span></div><div class="tool-desc">读取建筑专业结构化构件识别结果。</div></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="wrap"><span>© BANGTU TECHNOLOGY / OPEN MCP</span><div class="footer-links"><a href="https://www.bangtu-ai.com" target="_blank" rel="noreferrer">官网 ↗</a><a href="https://apidoc.bangtu-ai.com" target="_blank" rel="noreferrer">API 文档 ↗</a></div></footer>
+  </div>
+
+  <script>
+    const copy = async (value, button) => {
+      await navigator.clipboard.writeText(value);
+      const original = button.textContent;
+      button.textContent = '已复制';
+      setTimeout(() => { button.textContent = original; }, 1400);
+    };
+    document.querySelectorAll('[data-copy]').forEach((button) => {
+      button.addEventListener('click', () => copy(button.dataset.copy || '', button));
+    });
+    document.querySelectorAll('[data-copy-block]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const block = document.getElementById(button.dataset.copyBlock);
+        copy(block ? block.textContent : '', button);
+      });
+    });
+  </script>
+</body>
+</html>
