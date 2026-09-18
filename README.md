@@ -6,6 +6,10 @@
 
 - DWG 图纸基本信息识别：上传 DWG、查询任务状态、获取图框和图签结构化结果
 - 建筑专业构件识别：轴号、房间、门窗、楼梯、文字、立剖面和详图等 23 类结果
+- 电气专业构件识别：图框文字、子图框，以及指定子图框内按需筛选的 110+ 类电气构件（灯具、插座、配电箱、桥架、消防电气设备等）
+- 暖通专业构件识别：子图框定位后按需筛选 60 类暖通构件（风机、风阀、风口、风管、立管、多联机与采暖设备等）
+- 给排水专业构件识别：子图框定位后按需筛选 70 类给排水构件（消火栓、喷淋喷头、阀门、水泵、水箱、水表等）
+- 结构专业构件识别：子图框定位后按需筛选 12 类结构构件（轴号、标注线、住宅梁、住宅板、墙平面及墙柱/墙身子构件、墙身表、墙柱表等）
 - Streamable HTTP MCP 和兼容旧客户端的 SSE MCP
 
 ## 已固化的上游契约
@@ -190,14 +194,34 @@ HTTP/1.1 200 OK
 
 ## 工具
 
-| 工具 | 用途 |
-| --- | --- |
-| `bangtu_create_dwg_task` | 通过 MCP 的 `fileBase64 + fileName`、`filePath` 或 `fileUrl` 文件来源读取 `.dwg`，由服务端转成上游 `file` 文件字段并创建 PRE 任务 |
-| `bangtu_create_cv_task` | 用 `frameId` 创建建筑构件识别任务；当前仅支持 `architecture` |
-| `bangtu_get_task_status` | 查询任意异步任务状态，返回下一步 `_hint` |
-| `bangtu_wait_task` | 默认 20 秒、最多 45 秒的短时多次轮询；返回实际查询次数和是否超时 |
-| `bangtu_get_frame_result` | 获取 PRE 任务的图框、图签与坐标结果 |
-| `bangtu_get_arch_result` | 获取建筑专业 23 种结构化结果 |
+| 工具 | 请求契约 | 用途 |
+| --- | --- | --- |
+| `bangtu_create_dwg_task` | multipart POST | 通过 MCP 的 `fileBase64 + fileName`、`filePath` 或 `fileUrl` 文件来源读取 `.dwg`，由服务端转成上游 `file` 文件字段并创建 PRE 任务；项目多张 DWG 需分别上传 |
+| `bangtu_create_electrical_pre_task` | JSON POST | **电气预处理**：按项目一次性传入全部电气 `frameIds`，聚合出统一全局信息，返回 `electricalPreTaskId` |
+| `bangtu_create_hvac_pre_task` | JSON POST | **暖通预处理**：按项目一次性传入全部暖通 `frameIds`，聚合出统一全局信息，返回 `heatingPreTaskId` |
+| `bangtu_create_architecture_task` | form POST | 用 `frameId` 创建建筑构件识别任务（无预处理） |
+| `bangtu_create_electrical_task` | form POST | 用 `electricalPreTaskId` + `frameId` 创建电气构件识别任务 |
+| `bangtu_create_hvac_task` | form POST | 用 `heatingPreTaskId` + `frameId` 创建暖通构件识别任务 |
+| `bangtu_create_plumbing_task` | form POST | 用 `frameId` 创建给排水构件识别任务（无预处理） |
+| `bangtu_create_structure_task` | form POST | 用 `frameId` 创建结构构件识别任务（无预处理） |
+| `bangtu_get_task_status` | query GET | 查询任意异步任务状态，返回下一步 `_hint` |
+| `bangtu_wait_task` | query GET（内部轮询） | 默认 20 秒、最多 45 秒的短时多次轮询；返回实际查询次数和是否超时 |
+| `bangtu_get_frame_result` | query GET | 获取 PRE 任务的图框、图签与坐标结果 |
+| `bangtu_get_cv_result` | query GET | 所有当前专业共用的普通结果工具；获取建筑、电气、暖通、给排水、结构已开放的结果类型，包括各专业 `subFrame` 子图框基本信息 |
+| `bangtu_get_electrical_subframe_result` | JSON POST | 电气专业独立的子图框内容工具，获取指定电气子图框内的构件结果，`subFrameId` 必填 |
+| `bangtu_get_hvac_subframe_result` | JSON POST | 暖通专业独立的子图框内容工具，获取指定暖通子图框内的构件结果，`subFrameId` 必填 |
+| `bangtu_get_plumbing_subframe_result` | JSON POST | 给排水专业独立的子图框内容工具，获取指定给排水子图框内的构件结果，`subFrameId` 必填 |
+| `bangtu_get_structure_subframe_result` | JSON POST | 结构专业独立的子图框内容工具，获取指定结构子图框内的构件结果，`subFrameId` 必填 |
+| `bangtu_get_frame_entities_download_url` | query GET | 按 `frameId` 获取 30 分钟有效的图元数据下载链接，由调用方自行下载解压 |
+| `bangtu_capture_screenshot_in_frame` | JSON POST（文件流） | 按 `frameId` 和 `wcsLoc` 对图框内指定矩形区域截图，返回 PNG 图片 |
+
+## 图框图元与图框内截图
+
+图元下载拆成「取下载链接的标准 JSON 接口」与「下载文件流的 GET 接口」两步，图框截图对应的上游接口最终以**文件流**返回，不是通用的 `{ code, message, data }` 结构；只有失败时才返回通用 JSON 错误结构。
+
+`bangtu_get_frame_entities_download_url({ apiKey, frameId })` 对应 `GET /result/pre/download/drawingFrameEntitiesUrl?frameId={frameId}`，上游网关会把业务结果再包一层，真实地址位于 `data.data`（形如 `http(s)://{host}/openApi/result/pre/drawingFrameEntitiesForUrl/{JWT}`，JWT 的 `sub` 即 `frameId`、`exp` 为 30 分钟后）；**本工具已自动解包**并直接返回 `downloadUrl`。同一 `frameId` 的链接在有效期内可重复使用，上游对该接口启用了 sentinel 限流（返回 429「请求过于频繁」），请勿连续重复调用。**本工具只返回该下载链接，不下载、不解压、不解析文件**，由调用方在有效期内自行 `GET` 下载 `{frameId}-Entities.json.gz`：响应为 `application/octet-stream` 附件流，内容是 gzip 压缩的 UTF-8 JSON，按 CAD 图元类型（`AcDbLine`、`AcDbPolyline`、`AcDbText`、`AcDbBlockReference` 等）分数组存放，每个图元含公共字段 `super`；文件压缩前可能达到几十 MB。返回值包含 `downloadUrl`、`downloadUrlExpiresInSeconds`、`fileName` 和 `contentType`；链接过期或无效时该地址返回通用 JSON 错误结构，重新调用本工具获取新链接即可。
+
+`bangtu_capture_screenshot_in_frame({ apiKey, frameId, wcsLoc })` 对应 `POST /result/pre/download/captureScreenshotInFrame`，请求体为 JSON `{ frameId, wcsLoc }`，成功响应为 `image/png`，以 MCP `image` 内容块返回。`wcsLoc` 与 `frameWcsLoc` 使用同一套布局内相对坐标（WCS），Y 轴向上、必须满足 `top > bottom`，且必须完全位于图框范围内；截取整个图框时可直接使用 `frameWcsLoc` 原值。
 
 ## DWG 调用链
 
@@ -205,10 +229,20 @@ HTTP/1.1 200 OK
 2. 保存返回的 `data.taskId`。
 3. 对短任务调用 `bangtu_wait_task`，默认会实际查询多次并返回 `pollCount`、`elapsedSeconds` 和 `timedOut`。若返回 `data.status=RUNNING` 且 `timedOut=true`，只表示本次等待窗口结束，不表示失败；使用同一个 `taskId` 再次调用 `bangtu_wait_task`。
 4. 复杂图纸或 Agent 平台工具超时限制较短时，直接按约 3 至 5 秒间隔重复调用 `bangtu_get_task_status`。不要把一次工具调用结束、客户端超时或 `RUNNING` 判定为失败。
-5. 当状态变为 `SUCCESS`，调用 `bangtu_get_frame_result`，返回 `data[]` 图框列表。
-6. 从图框结果中选择 `frameId`，调用 `bangtu_create_cv_task({ product: "architecture", frameId })` 创建建筑任务。
-7. 对建筑任务重复使用 `bangtu_wait_task` 或 `bangtu_get_task_status`，直到状态为 `SUCCESS`。
-8. 调用 `bangtu_get_arch_result({ taskId, dataType })` 获取建筑专业结构化结果。
+5. 当状态变为 `SUCCESS`，调用 `bangtu_get_frame_result`，返回 `data[]` 图框列表。项目包含多张 DWG 时，应对每个 PRE 任务各调用一次，汇总出项目全部 `frameId`。
+6. 按专业分支创建识别任务：
+   - **建筑**：`bangtu_create_architecture_task({ apiKey, frameId })`，无预处理。
+   - **给排水**：`bangtu_create_plumbing_task({ apiKey, frameId })`，无预处理。
+   - **结构**：`bangtu_create_structure_task({ apiKey, frameId })`，无预处理。
+   - **电气**：先 `bangtu_create_electrical_pre_task({ apiKey, frameIds: [本项目全部电气 frameId] })` 完成项目级聚合预处理，轮询其 `taskId` 至 `SUCCESS` 得到 `electricalPreTaskId`；再对每个图框调用 `bangtu_create_electrical_task({ apiKey, electricalPreTaskId, frameId })`。
+   - **暖通**：先 `bangtu_create_hvac_pre_task({ apiKey, frameIds: [本项目全部暖通 frameId] })` 完成项目级聚合预处理，轮询其 `taskId` 至 `SUCCESS` 得到 `heatingPreTaskId`；再对每个图框调用 `bangtu_create_hvac_task({ apiKey, heatingPreTaskId, frameId })`。
+7. 对任务重复使用 `bangtu_wait_task` 或 `bangtu_get_task_status`，直到状态为 `SUCCESS`。预处理任务必须在创建单图框任务前先变为 `SUCCESS`，否则创建会失败。
+8. 建筑任务：调用 `bangtu_get_cv_result({ product: "architecture", taskId, dataType })` 获取 23 种专业结构化结果。
+9. 电气文字：调用 `bangtu_get_cv_result({ product: "electrical", taskId, dataType: "texts" })`，直接取得完整图框文字结果。
+10. 电气子图框及构件：先调用 `bangtu_get_cv_result({ product: "electrical", taskId, dataType: "subFrame" })` 获取电气子图框，再调用 `bangtu_get_electrical_subframe_result` 获取指定子图框内的电气构件。
+11. 暖通子图框及构件：先调用 `bangtu_get_cv_result({ product: "hvac", taskId, dataType: "subFrame" })` 获取暖通子图框，再调用 `bangtu_get_hvac_subframe_result` 获取指定子图框内的暖通构件。
+12. 给排水子图框及构件：先调用 `bangtu_get_cv_result({ product: "plumbing", taskId, dataType: "subFrame" })` 获取给排水子图框，再调用 `bangtu_get_plumbing_subframe_result` 获取指定子图框内的给排水构件。
+13. 结构子图框及构件：先调用 `bangtu_get_cv_result({ product: "structure", taskId, dataType: "subFrame" })` 获取结构子图框，再调用 `bangtu_get_structure_subframe_result` 获取指定子图框内的结构构件。
 
 任务状态以 `data.status` 为准。`FAILED` 时请读取 `data.logs`；`RUNNING` 不是错误，不能因便捷轮询超时、客户端结束工具调用或短时间内未完成而视为失败。`bangtu_wait_task` 是同步等待式工具，客户端若有更短的单次工具超时，应改用重复的 `bangtu_get_task_status`。
 
@@ -246,9 +280,13 @@ HTTP/1.1 200 OK
 
 `fileBase64`、`fileName`、`filePath` 和 `fileUrl` 是 MCP 层参数，不是帮图上游 API 参数。远程 Agent 不需要内网穿透，也不应传调用方电脑上的本地路径。
 
-## 建筑结果类型
+## 跨专业普通结果工具
 
-`bangtu_get_arch_result` 的 `dataType` 支持：
+`bangtu_get_cv_result` 是建筑、电气、暖通、给排水、结构当前已有专业共用的普通结果获取工具。它统一调用 `GET /result/{专业路径}/{dataType}?id={taskId}`；未来任一专业新增相同 GET 契约的结果类型，继续扩展该专业在本工具中的 `dataType` 支持范围。
+
+`subFrame` 在本工具中表示子图框基本信息，不表示指定子图框内的构件内容。子图框内容使用各专业独立的 `subFrameResult` 工具。当前电气、暖通、给排水、结构有该内容接口；建筑目前没有，但以后上游增加建筑子图框内容接口时，应新增建筑专业自己的内容工具。
+
+当前 `product=architecture` 支持以下 `dataType`：
 
 ```text
 axisNumber, indexNumber, texts, textelvation, arrows, alignedDims, subFrame,
@@ -257,6 +295,40 @@ sectionStorey, stairPlanDetWall, stairPlanDetSeg, stairPlanDetPlatform,
 stairPlanDetRail, stairSecDetPlatform, stairSecDetSeg, wallDetContour,
 doorWinDetail, doorWinTable
 ```
+
+## 电气结果类型
+
+电气结果包含两种不同请求契约，不合并在同一个工具中：
+
+- 图框文字：`bangtu_get_cv_result({ product: "electrical", taskId, dataType: "texts" })`，对应 `GET /result/electrical_cv/texts?id={taskId}`。
+- 子图框列表：`bangtu_get_cv_result({ product: "electrical", taskId, dataType: "subFrame" })`，对应 `GET /result/electrical_cv/subFrame?id={taskId}`。返回 `subFrameId`、`subFrameName`、`subFrameType`、`wcsLoc`；子图框类型包括 `FRAME_UNK`、`PLAN_DRAWING`、`SYSTEM_DRAWING`。
+- 子图框内构件：`bangtu_get_electrical_subframe_result({ taskId, subFrameId, dataTypeList? })`，对应 `POST /result/electrical_cv/subFrameResult`，请求体为 JSON，`subFrameId` 必填。`dataTypeList` 支持 110+ 种构件类型（含 `all`），不传或传空时默认返回全部构件。
+
+建筑、电气、暖通、给排水、结构已开放的普通结果和 `subFrame` 子图框基本信息均由 `bangtu_get_cv_result` 统一获取；指定电气子图框内容由 `bangtu_get_electrical_subframe_result` 独立获取。
+
+## 暖通结果类型
+
+暖通任务类型为 `HEATING_CV`。暖通普通结果和子图框基本信息属于跨专业通用 GET 契约；当前使用 `bangtu_get_cv_result({ product: "hvac", taskId, dataType: "subFrame" })` 获取，对应 `GET /result/heating_cv/subFrame?id={taskId}`。
+
+指定暖通子图框内容使用暖通专业独立工具 `bangtu_get_hvac_subframe_result({ taskId, subFrameId, dataTypeList? })` 获取，对应 `POST /result/heating_cv/subFrameResult`。该工具使用独立暖通枚举，共 60 种取值（含 `all`）：轴号 `axisNumber`、风机（`exhaustFan` 排风机、`supplyFan` 送风机、`smokeExhaustFan` 排烟风机）、风阀（`fireDamper` 防火阀、`smokeExhaustValve` 排烟阀）、风口（`supplyOutlet` 送风口、`smokeExhaustOutlet` 排烟口）、风管与立管（`supplyDuct`、`exhaustDuct`、`supplyRiser` 等）、空调与采暖设备（`vrfIndoorUnit` / `vrfOutdoorUnit` 多联机内外机、`floorHeatingCoil` 地暖盘管）等。
+
+暖通接口的参数、枚举或返回处理发生变化时，只修改暖通工具，不同步影响电气或给排水。
+
+## 给排水结果类型
+
+给排水任务类型为 `WSD_CV`。给排水普通结果和子图框基本信息属于跨专业通用 GET 契约；当前使用 `bangtu_get_cv_result({ product: "plumbing", taskId, dataType: "subFrame" })` 获取，对应 `GET /result/wsd_cv/subFrame?id={taskId}`。
+
+指定给排水子图框内容使用给排水专业独立工具 `bangtu_get_plumbing_subframe_result({ taskId, subFrameId, dataTypeList? })` 获取，对应 `POST /result/wsd_cv/subFrameResult`。该工具使用独立给排水枚举，共 70 种取值（含 `all`）：`indoorFireHydrant` 室内消火栓、`sprinklerHead` 喷头、阀门（`gateValve` 闸阀、`butterflyValve` 蝶阀、`checkValve` 止回阀）、`waterMeter` 水表、水箱与水泵、`floorDrain` 地漏等。
+
+给排水接口的参数、枚举、子图框类型或返回处理发生变化时，只修改给排水工具，不同步影响电气或暖通。
+
+## 结构结果类型
+
+结构任务类型为 `STRUCT_CV`，专业路径为 `struct_cv`。结构普通结果和子图框基本信息属于跨专业通用 GET 契约；当前使用 `bangtu_get_cv_result({ product: "structure", taskId, dataType: "subFrame" })` 获取，对应 `GET /result/struct_cv/subFrame?id={taskId}`。返回 `subFrameId`、`subFrameName`、`subFrameType`、`wcsLoc`、`frameId`；子图框类型包括 `FRAME_UNK`、`AXIS`、`TABLE`、`PLA`、`SEC`、`TABLE_TWO`、`DETAIL`、`SCTL`、`BASIC_DETAIL`，其中 `AXIS` 轴网和 `TABLE` 表格已开放构件结果，其余类型当前只返回基本信息。
+
+指定结构子图框内容使用结构专业独立工具 `bangtu_get_structure_subframe_result({ taskId, subFrameId, dataTypeList? })` 获取，对应 `POST /result/struct_cv/subFrameResult`，请求体为 JSON，`subFrameId` 必填。该工具使用独立结构枚举，共 12 种取值（含 `all`）：`axisNumber` 轴号、`dimInfo` 标注线、`upBeam` 住宅梁、`slab` 住宅板、`wallAxis` 墙平面、`qsTable` 墙身表、`qzTable` 墙柱表，以及子构件 `slab.slabCode` 住宅板-板型号编号、`slab.slabHole` 住宅板-板孔洞列表、`wallAxis.qz_list` 墙平面-墙柱列表、`wallAxis.qs_list` 墙平面-墙身列表。带点号的是子构件，只请求子构件时只返回被请求的那部分字段；同时请求顶层构件及其子构件会自动合并为完整结构。地库梁板柱、桩、筏板、承台、独立基础、楼梯、详图等构件不支持单独查询，传入会返回参数错误。
+
+结构接口的参数、枚举、子图框类型或返回处理发生变化时，只修改结构工具，不同步影响电气、暖通或给排水。
 
 ## 服务器部署
 
@@ -316,6 +388,7 @@ BANGTU_POLL_INTERVAL_MS=5000
 BANGTU_MAX_TASK_DURATION_MINUTES=120
 BANGTU_DEFAULT_WAIT_SECONDS=20
 BANGTU_MAX_WAIT_SECONDS=45
+JSON_LIMIT=200mb
 ```
 
 服务启动后先检查：
@@ -355,6 +428,10 @@ server {
 
     ssl_certificate     /etc/letsencrypt/live/mcp.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/mcp.example.com/privkey.pem;
+
+    # fileBase64 走 JSON-RPC body，Nginx 默认 client_max_body_size 只有 1m，不放大则上传会先被网关以 413 拒绝。
+    # 该值需要不小于服务端 JSON_LIMIT（默认 200mb）。
+    client_max_body_size 200m;
 
     location / {
         proxy_pass http://127.0.0.1:3000;

@@ -11,7 +11,9 @@
     "dev": "tsx watch src/index.ts",
     "prestart": "node -e \"import('dotenv').catch(() => { console.error('Runtime dependencies are missing. Run npm ci before npm start.'); process.exit(1); })\"",
     "start": "node dist/index.js",
-    "build": "tsc -p tsconfig.json",
+    "build": "node scripts/build.mjs production",
+    "build:test": "node scripts/build.mjs test",
+    "build:inner": "node scripts/build.mjs inner",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "engines": {

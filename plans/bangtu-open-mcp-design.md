@@ -1,6 +1,6 @@
 # bangtu-open-mcp 接口契约与工具设计文档
 
-> 状态：建筑专业已发布；电气专业暂缓发布，等待上游 API 上线
+> 状态：建筑、电气专业已发布；暖通、给排水已随上游测试环境 API 上线而开放（接口路径基于测试环境 apidoc 与后端 DataTypeEnum.java 固化，正式 API 上线后即对生产生效）
 > 目标：将帮图开放 API 的接口契约固化进 MCP 工具定义，使文档页面下线后 MCP 仍能独立工作，让 agent 开箱即用地拿到 DWG 图纸解析内容。
 
 ---
@@ -63,23 +63,57 @@
 
 建筑结果接口统一走 `GET /result/building_cv/{dataType}?id=`，`dataType` 见 6.2 节枚举（共 23 种）。
 
-### 3.3 电气构件识别（暂未发布）
+### 3.3 电气构件识别
 
-电气上游 API 尚未上线，当前 MCP 不注册电气工具，也不接受 `product: "electrical"`。以下接口契约仅作为后续恢复实现的设计记录，暂不属于当前发布版本：
+电气已随上游 API 上线开放，由独立的 `bangtu_create_electrical_task` 创建，且必须先执行 `bangtu_create_electrical_pre_task` 项目级聚合预处理。接口契约如下：
 
 | 操作 | Method | Path | 请求方式 | 关键参数 |
 |------|--------|------|----------|----------|
-| 创建任务 | POST | `/cv/electrical_cv/createTask` | `application/x-www-form-urlencoded` | `frameId` |
+| 创建预处理任务 | POST | `/cv/electrical_cv/createPreTask` | `application/json` | `frameIds`（本项目全部电气图框） |
+| 创建任务 | POST | `/cv/electrical_cv/createTask` | `application/x-www-form-urlencoded` | `electricalPreTaskId`、`frameId` |
 | 查询状态 | GET | `/result/taskStatusData` | query | `taskId` |
 | 获取子图框 | GET | `/result/electrical_cv/subFrame` | query | `id`（即 taskId） |
 | 获取构件结果 | POST | `/result/electrical_cv/subFrameResult` | `application/json` | `taskId`、`subFrameId`、`dataTypeList` |
 | 获取图框文字 | GET | `/result/electrical_cv/texts` | query | `id`（即 taskId） |
 
-> 电气与建筑的本质差异：电气是“一个统一结果接口 + `dataTypeList` 枚举筛选（110+ 种构件）”，且多一步“子图框”中间层；待上游接口上线后再恢复实现。
+> 电气识别必须先做项目级预处理：先把本项目所有电气图框的 `frameId` 聚合成 `frameIds` 调一次 `createPreTask`（任务类型 `ELECTRICAL_PRE_CV`）拿到统一全局信息，轮询至 `SUCCESS` 后该 `taskId` 即 `electricalPreTaskId`，再逐图框调 `createTask`。未完成预处理时 `createTask` 会失败。
+>
+> 电气结果包含两类不同契约：文字和子图框与建筑结果一样，都是 query GET；指定子图框内构件是 JSON POST。MCP 按实际请求契约拆分工具，不能因为业务流程相邻而用可选参数强行合并。
 
 ---
 
-## 4. 工具设计（6 个）
+### 3.4 暖通构件识别
+
+暖通使用 `heating_cv` 接口前缀，异步任务类型为 `HEATING_CV`（预处理任务类型为 `HEATING_PRE_CV`）。当前接口契约如下：
+
+| 操作 | Method | Path | 请求方式 | 关键参数 |
+|------|--------|------|----------|----------|
+| 创建预处理任务 | POST | `/cv/heating_cv/createPreTask` | `application/json` | `frameIds`（本项目全部暖通图框） |
+| 创建任务 | POST | `/cv/heating_cv/createTask` | `application/x-www-form-urlencoded` | `heatingPreTaskId`、`frameId` |
+| 查询状态 | GET | `/result/taskStatusData` | query | `taskId` |
+| 获取子图框 | GET | `/result/heating_cv/subFrame` | query | `id`（即 taskId） |
+| 获取子图框构件 | POST | `/result/heating_cv/subFrameResult` | `application/json` | `taskId`、`subFrameId`、`dataTypeList` |
+
+暖通与电气同构，必须先做项目级预处理：把本项目全部暖通图框的 `frameId` 聚合成 `frameIds` 调一次 `createPreTask` 拿到统一全局信息，轮询至 `SUCCESS` 后该 `taskId` 即 `heatingPreTaskId`，再逐图框调 `createTask`。未完成预处理时 `createTask` 会失败。
+
+暖通当前已开放的普通结果通过跨专业通用工具 `bangtu_get_cv_result` 获取，其中 `product: "hvac"`、`dataType: "subFrame"` 返回暖通子图框基本信息。指定暖通子图框内容由 `bangtu_get_hvac_subframe_result` 独立处理；其 schema、请求体和路径均在该工具中显式定义，后续增加暖通专属内容参数时不影响其他专业。
+
+### 3.5 给排水构件识别
+
+给排水使用 `wsd_cv` 接口前缀，异步任务类型为 `WSD_CV`。当前接口契约如下：
+
+| 操作 | Method | Path | 请求方式 | 关键参数 |
+|------|--------|------|----------|----------|
+| 创建任务 | POST | `/cv/wsd_cv/createTask` | `application/x-www-form-urlencoded` | `frameId` |
+| 查询状态 | GET | `/result/taskStatusData` | query | `taskId` |
+| 获取子图框 | GET | `/result/wsd_cv/subFrame` | query | `id`（即 taskId） |
+| 获取子图框构件 | POST | `/result/wsd_cv/subFrameResult` | `application/json` | `taskId`、`subFrameId`、`dataTypeList` |
+
+给排水当前已开放的普通结果通过跨专业通用工具 `bangtu_get_cv_result` 获取，其中 `product: "plumbing"`、`dataType: "subFrame"` 返回给排水子图框基本信息。指定给排水子图框内容由 `bangtu_get_plumbing_subframe_result` 独立处理；其 schema、请求体和路径均在该工具中显式定义，后续增加给排水专属内容参数、子图框类型或返回处理时不影响其他专业。
+
+---
+
+## 4. 工具设计（18 个）
 
 ### 4.1 通用操作层（跨专业复用）
 
@@ -91,17 +125,28 @@
 | `filePath` | string | 二选一 | MCP 服务器可访问的本地 DWG 文件绝对路径 |
 | `fileUrl` | string | 二选一 | 可公开下载的 DWG 文件 URL |
 
-返回 `data.taskId`（字符串，勿转数字）。
+返回 `data.taskId`（字符串，勿转数字）。项目含多张 DWG 时需对每张分别调用。
 
-#### `bangtu_create_cv_task`
-根据 `frameId` 创建专业构件识别任务。
+#### 专业任务创建工具（五个专业各自独立，不再聚合）
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `product` | enum | 是 | `architecture` / `electrical` |
-| `frameId` | string | 是 | 取自图框基本信息结果 |
+不再提供带 `product` 参数的通用 `bangtu_create_cv_task`，改为五个专业各自一个工具，各自 `description` 中写明本专业的完整调用顺序。内部路由仍由 `productInfo` 表驱动。
 
-内部路由：`architecture` → `/cv/building_cv/createTask`；`electrical` → `/cv/electrical_cv/createTask`。
+| 工具 | Path | 关键参数 | 是否有预处理 |
+|------|------|----------|--------------|
+| `bangtu_create_architecture_task` | `/cv/building_cv/createTask` | `frameId` | 无 |
+| `bangtu_create_plumbing_task` | `/cv/wsd_cv/createTask` | `frameId` | 无 |
+| `bangtu_create_structure_task` | `/cv/struct_cv/createTask` | `frameId` | 无 |
+| `bangtu_create_electrical_task` | `/cv/electrical_cv/createTask` | `electricalPreTaskId`、`frameId` | 必须先做电气预处理 |
+| `bangtu_create_hvac_task` | `/cv/heating_cv/createTask` | `heatingPreTaskId`、`frameId` | 必须先做暖通预处理 |
+
+#### 项目级预处理工具（电气、暖通各一个）
+
+| 工具 | Path | 请求方式 | 关键参数 |
+|------|------|----------|----------|
+| `bangtu_create_electrical_pre_task` | `/cv/electrical_cv/createPreTask` | `application/json` | `frameIds`（本项目全部电气图框） |
+| `bangtu_create_hvac_pre_task` | `/cv/heating_cv/createPreTask` | `application/json` | `frameIds`（本项目全部暖通图框） |
+
+两者都把「一个项目里全部待识别图框」聚合成一次预处理请求，得到整个项目的统一全局信息，返回 `taskId` 作为后续单图框创建任务的 `electricalPreTaskId` / `heatingPreTaskId`。**顺序约束：** 先用 `bangtu_get_frame_result` 汇总本项目全部 `frameId` → 预处理任务 `SUCCESS` → 才能逐图框调用对应的创建任务工具；建筑、给排水、结构不经过预处理。
 
 #### `bangtu_get_task_status`
 查询异步任务状态（所有任务类型通用），并引导 agent 正确轮询。
@@ -126,7 +171,7 @@
 
 > 通过"description 引导 + 每次返回带 `_hint`"形成轮询闭环，agent 无需任何外部知识即可正确等待异步任务完成。
 
-### 4.2 结果获取层（按结果形态区分）
+### 4.2 结果获取层（按请求契约区分）
 
 #### `bangtu_get_frame_result`
 获取 DWG 图纸基本信息识别结果（图框列表）。
@@ -137,28 +182,60 @@
 
 内部路由：`GET /result/pre/frameBaseInfo?id={taskId}`。返回 `data` 图框数组（`frameId`、`signInfo` 图签内容、`rotation` 等）。
 
-#### `bangtu_get_arch_result`
-获取建筑构件识别结果（轴号、房间、门窗、楼梯、文字等 23 种）。
+#### `bangtu_get_cv_result`
+建筑、电气、暖通、给排水所有当前专业共用的普通结果工具。凡是符合 `GET /result/{专业路径}/{dataType}?id={taskId}` 契约的结果，都由本工具按 `product + dataType` 获取；未来新增专业或现有专业增加同契约结果时继续扩展本工具。
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `taskId` | string | 是 | BUILDING_CV 任务 ID |
-| `dataType` | enum | 是 | 见 6.2 节建筑 dataType 枚举 |
+| `product` | enum | 是 | `architecture` / `electrical` / `hvac` / `plumbing` |
+| `taskId` | string | 是 | 对应专业任务 ID |
+| `dataType` | enum | 是 | 结果类型，必须与专业匹配 |
 
-内部路由：`GET /result/building_cv/{dataType}?id={taskId}`。
+当前支持矩阵：
 
-#### `bangtu_get_electrical_result`
-获取电气构件识别结果（两步：子图框 → 构件结果）。
+| product | dataType | 内部路由 |
+|---------|----------|----------|
+| `architecture` | 见 6.2 节全部 23 种，含 `subFrame` 基本信息 | `GET /result/building_cv/{dataType}?id={taskId}` |
+| `electrical` | `texts` / `subFrame` 基本信息 | `GET /result/electrical_cv/{dataType}?id={taskId}` |
+| `hvac` | `subFrame` 基本信息 | `GET /result/heating_cv/subFrame?id={taskId}` |
+| `plumbing` | `subFrame` 基本信息 | `GET /result/wsd_cv/subFrame?id={taskId}` |
+
+`subFrame` 与 `subFrameResult` 是两个不同层级：`subFrame` 返回子图框基本信息，属于跨专业普通 GET 结果；`subFrameResult` 返回指定子图框内容，按专业独立工具处理。当前电气、暖通、给排水已提供 `subFrameResult`，建筑尚未提供；未来上游增加建筑 `subFrameResult` 时，应新增建筑专业独立的子图框内容工具，而不是改变 `bangtu_get_cv_result` 的职责。
+
+#### `bangtu_get_electrical_subframe_result`
+电气专业独立的子图框内容工具，获取指定电气子图框内的构件结果。
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `taskId` | string | 是 | ELECTRICAL_CV 任务 ID |
-| `subFrameId` | string | 否 | 子图框 ID；不传时先返回子图框列表 |
+| `subFrameId` | string | 是 | 通过 `bangtu_get_cv_result` 的 `subFrame` 结果取得 |
 | `dataTypeList` | string[] | 否 | 构件类型列表，见 6.3 节；不传返回全部 |
 
-行为约定：
-- 未传 `subFrameId` 时，调用 `GET /result/electrical_cv/subFrame?id=` 返回子图框列表，引导 agent 选择 `subFrameId`。
-- 传入 `subFrameId` 时，调用 `POST /result/electrical_cv/subFrameResult`（JSON body `{taskId, subFrameId, dataTypeList}`）返回构件结果。
+内部路由固定为 `POST /result/electrical_cv/subFrameResult`，JSON body 为 `{taskId, subFrameId, dataTypeList}`。本工具不再通过省略 `subFrameId` 切换到 GET 接口。
+
+#### `bangtu_get_hvac_subframe_result`
+暖通专业独立的子图框内容工具，获取指定暖通子图框内的构件结果。
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `taskId` | string | 是 | `HEATING_CV` 暖通任务 ID |
+| `subFrameId` | string | 是 | 暖通子图框 ID |
+| `dataTypeList` | string[] | 否 | 暖通构件类型，使用暖通独立枚举；不传返回全部 |
+
+内部路由固定为 `POST /result/heating_cv/subFrameResult`，请求体由暖通工具独立构造。新增暖通专属参数时只修改该工具。
+
+#### `bangtu_get_plumbing_subframe_result`
+给排水专业独立的子图框内容工具，获取指定给排水子图框内的构件结果。
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `taskId` | string | 是 | `WSD_CV` 给排水任务 ID |
+| `subFrameId` | string | 是 | 给排水子图框 ID |
+| `dataTypeList` | string[] | 否 | 给排水构件类型，使用给排水独立枚举；不传返回全部 |
+
+内部路由固定为 `POST /result/wsd_cv/subFrameResult`，请求体由给排水工具独立构造。新增给排水专属参数、子图框类型或返回处理时只修改该工具。
+
+> 当前电气、暖通、给排水三个 `subFrameResult` 内容工具在 `createServer` 中分别完整注册。建筑目前没有 `subFrameResult` 上游接口；若以后增加，应注册建筑自己的内容工具。文档按专业分别维护，不把当前接口集合视为永久不变。
 
 ---
 
@@ -187,13 +264,16 @@ DWG 创建任务需要 `multipart/form-data` 上传 `file` 字段。MCP 工具�
 
 ### 6.1 `product` 枚举
 
-当前发布版本仅开放：
+已开放：
 
 | 值 | 说明 | 任务类型 |
 |----|------|----------|
 | `architecture` | 建筑构件识别 | `BUILDING_CV` |
+| `electrical` | 电气构件识别 | `ELECTRICAL_CV` |
+| `hvac` | 暖通构件识别 | `HEATING_CV` |
+| `plumbing` | 给排水构件识别 | `WSD_CV` |
 
-> 电气 `electrical` 以及 `structure`、`hvac`、`plumbing` 均为预留能力，当前版本不注册、不调用，待对应后端接口上线后再开放。
+> `structure`（结构）仍为预留能力，待对应后端接口上线后再开放。
 
 ### 6.2 建筑 `dataType` 枚举（`GET /result/building_cv/{dataType}`）
 
@@ -225,9 +305,9 @@ DWG 创建任务需要 `multipart/form-data` 上传 `file` 字段。MCP 工具�
 
 > 建筑子图框（`subFrame`）返回字段是 `objId`（注意与电气的 `subFrameId` 不同），子图框类型：`PLAN` / `FACADE` / `SECTION` / `STAIR_DETAILED_PLAN` / `STAIR_DETAILED_SEC` / `STAIR_DETAILED_WALL`。
 
-### 6.3 电气 `dataTypeList` 枚举（预留，当前未发布）
+### 6.3 电气 `dataTypeList` 枚举（已发布）
 
-以下枚举仅保留用于后续恢复实现，当前 MCP 不会注册对应工具，也不会向 agent 暴露这些值。
+以下枚举由 `bangtu_get_electrical_subframe_result` 工具开放，供 `dataTypeList` 参数使用，`all` 表示全部构件。
 
 `POST /result/electrical_cv/subFrameResult`：
 
@@ -273,6 +353,50 @@ gasDischargeIndicator, dryPowderDischargeIndicator, emergencyStartStopButton
 | `PLAN_DRAWING` | 平面图 |
 | `SYSTEM_DRAWING` | 系统图 |
 
+> 给排水子图框文档中 `subFrameType` 额外包含 `SPECIFICATION_DRAWING`（设计说明图框），具体以子图框接口返回为准。
+
+### 6.5 暖通 `dataTypeList` 枚举（随 `bangtu_get_hvac_subframe_result` 开放）
+
+来源：后端 `cv/heating/base/subframe/DataTypeEnum.java`，共 60 种取值（含 `all`）：
+
+```text
+all, axisNumber, smokeExhaustExhaustFan, smokeExhaustFan, makeupSupplyFan, pressurizationFan,
+makeupFan, exhaustFan, exhaustFanSpecial, supplyFan, smokeExhaustValve, smokeExhaustFireDamper,
+fireDamper, checkValve, smokeExhaustExhaustOutlet, smokeExhaustOutlet, makeupOutlet,
+makeupSupplyOutlet, pressurizationOutlet, exhaustOutlet, supplyOutlet, unknownOutlet, smokeBarrier,
+carbonMonoxideDetector, smokeValveManualRelease, normallyClosedSmokeOutlet,
+normallyClosedPressurizationOutlet, silencer, staticPressureBox, reducer, elbow, tee, cross,
+branchPipe, vrfIndoorUnit, vrfOutdoorUnit, pressureGauge, thermometer, floorHeatingManifold,
+floorHeatingCoil, refrigerantPipe, condensatePipe, airConditioningDuct, smokeExhaustExhaustDuct,
+smokeExhaustDuct, makeupSupplyDuct, makeupDuct, pressurizationDuct, exhaustDuct, supplyDuct,
+unknownDuct, smokeExhaustRiser, smokeExhaustExhaustRiser, makeupRiser, makeupSupplyRiser,
+pressurizationRiser, exhaustRiser, supplyRiser, unknownRiser
+```
+
+### 6.6 给排水 `dataTypeList` 枚举（随 `bangtu_get_plumbing_subframe_result` 开放）
+
+来源：后端 `cv/wsd/base/subframe/DataTypeEnum.java`，共 70 种取值（含 `all`）：
+
+```text
+all, axisNumber, indoorFireHydrant, testFireHydrantWithPressureGauge, fireElevatorCollectionWell,
+hPipeFitting, inspectionPort, endOfLineTestDevice, sterilizer, highLevelFireWaterTank,
+flaredOutlet, flowSwitch, checkValve, gateValve, automaticExhaustValve, floorSlabLine,
+pressureGauge, domesticWaterTank, antiPestNet, corrugatedPipe, filter, levelGauge, electricValve,
+waterLevelControlValve, backflowPreventer, pressureSwitch, domesticWaterPump, domesticHotWaterTank,
+stopValve, ballValve, butterflyValve, generalValve, signalValve, concentricReducingFitting,
+rubberFlexibleJoint, waterFlowIndicator, unclassifiedCollectionWell, waterMeter, waterQualityMonitor,
+pressureReducingValve, floatValve, floorCleanout, greaseTrap, waterBoiler, waterHeater,
+unclassifiedWaterTank, unclassifiedWaterPump, sprinklerHead, fireExtinguisher,
+fireHydrantStabilizingPump, sprinklerStabilizingPump, pressureTank,
+indoorFireHydrantWithHoseReel, floorDrain, domesticHotWaterBox, gateValveFixed,
+indoorFireHydrantTestOnly, manifold, uncategorizedWaterPump, outdoorFireHydrantMainPump,
+indoorFireHydrantMainPump, outdoorFireHydrantStabilizingPump, indoorFireHydrantStabilizingPump,
+reliefValve, vehicleRampCollectionWell, pumpFoundation, indoorOutdoorFireHydrantCombinedMainPump,
+unclassifiedPump, sprinklerFireHydrantMainPump
+```
+
+> 注意：测试环境 apidoc 页面将"消防电梯集水井"写作 `fireElevatorCollectionWellH`（带 H 后缀），后端源码实际为 `fireElevatorCollectionWell`，MCP 以源码为准。
+
 ---
 
 ## 7. 响应结构处理
@@ -294,11 +418,15 @@ flowchart TD
     C --> D{选择专业}
     D -->|建筑| E[createTask 得 BUILDING_CV taskId]
     D -->|电气| F[createTask 得 ELECTRICAL_CV taskId]
+    D -->|暖通| H1[createTask 得 HEATING_CV taskId]
+    D -->|给排水| W1[createTask 得 WSD_CV taskId]
     E --> G[轮询至 SUCCESS]
     F --> G
+    H1 --> G
+    W1 --> G
     G --> H{专业}
     H -->|建筑| I[GET building_cv dataType 取结果]
-    H -->|电气| J[GET subFrame 得 subFrameId]
+    H -->|电气/暖通/给排水| J[GET subFrame 得 subFrameId]
     J --> K[POST subFrameResult dataTypeList 取构件]
 ```
 
@@ -306,10 +434,10 @@ flowchart TD
 
 ## 9. 未来扩展
 
-- 结构 / 暖通 / 给排水专业上线后，按"结果形态"判断归属：
-  - 若接近"建筑式多 GET 接口"，扩展 `bangtu_get_arch_result` 的 `dataType` 或新增结果工具。
-  - 若接近"电气式子图框 + 枚举"，复用 `bangtu_get_electrical_result` 模式。
-- `product` 枚举同步扩展，创建任务工具 `bangtu_create_cv_task` 内部路由表增加对应 `/cv/{xxx}_cv/createTask`。
+- `bangtu_get_cv_result` 面向所有当前及未来专业复用；新增专业或现有专业新增相同 query GET 契约的普通结果时，扩展 `product` 与该专业的 `dataType` 支持矩阵。
+- 任一专业新增 `subFrameResult` 子图框内容接口时，为该专业新增独立且完整的 `server.tool` 注册代码。例如建筑以后新增内容接口，应注册建筑专业工具，不与电气、暖通、给排水共用配置式注册函数。
+- 新增专业时，为该专业注册独立的创建任务工具（并视上游是否有预处理接口决定是否新增预处理工具）；创建任务路由已由 `productInfo` 表驱动，新增专业需补映射、`preTaskPath` / `preTaskIdField`（如该专业有预处理）、普通结果类型和对应构件枚举常量。
+- 若上游把项目级聚合预处理推广到建筑、给排水或结构，按电气、暖通的模式为该专业新增独立的预处理工具，并在对应创建任务工具的 `description` 中写清「先预处理、后逐图框创建」的顺序，不要改回通用聚合工具。
 - 文件上传如需支持远程大文件，再增加 `fileBase64` 或流式下载方案。
 
 ---
@@ -318,4 +446,6 @@ flowchart TD
 
 1. 建筑标高符号的 `dataType` 文档写的是 `textelvation`，需确认线上实际是否应为 `textElevation`。
 2. 文件上传首期是否只需 `filePath` + `fileUrl`，是否需要 `fileBase64`。
-3. `bangtu_get_electrical_result` 是否接受"未传 subFrameId 时自动返回子图框列表"的两段式行为。
+3. 测试环境 apidoc 把给排水"消防电梯集水井"枚举写为 `fireElevatorCollectionWellH`，后端 `DataTypeEnum.java` 实际为 `fireElevatorCollectionWell`（无 H 后缀）；MCP schema 已按后端源码取值，待线上返回真实子图框结果后验证。
+4. 暖通 `dataTypeList` 是否接受 `all`：暖通源码枚举含 `all`，当前按接受处理。
+5. 给排水 `dataTypeList` 是否接受 `all`：给排水源码枚举含 `all`，当前按接受处理。

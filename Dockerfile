@@ -5,7 +5,10 @@ WORKDIR /code/
 
 COPY . .
 
-RUN npm config set registry https://registry.npmmirror.com && npm install && npm run build
+RUN npm config set registry https://registry.npmmirror.com \
+    && npm ci --no-audit --no-fund
+
+RUN npm run build
 
 EXPOSE 3000
 

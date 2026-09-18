@@ -1,4 +1,7 @@
 node_modules/
+.idea/
 .env
 *.log
+.apidoc-page.html
 .apidoc-app.js
+dist/

@@ -1,0 +1,24 @@
+{
+  "name": "帮图CAD建筑图纸解析",
+  "name_zh": "帮图CAD建筑图纸解析",
+  "name_en": "BangTu CAD Architectural Drawing Parsing",
+  "description": "上传 DWG 图纸，自动识别图框与图签，并提取建筑专业 23 类构件（轴号、房间、门、窗、楼梯、立面、剖面、门窗表等）的结构化结果。适合图纸识别与 BIM 数据化。",
+  "description_zh": "上传 DWG 图纸，自动识别图框与图签，并提取建筑专业 23 类构件（轴号、房间、门、窗、楼梯、立面、剖面、门窗表等）的结构化结果。适合图纸识别与 BIM 数据化。",
+  "description_en": "Upload DWG drawings, auto-detect frames and title blocks, and extract structured results for 23 building categories (axis numbers, rooms, doors, windows, stairs, facades, sections, door/window schedules, etc.). Ideal for drawing recognition and BIM data digitization.",
+  "source": "bangtu-open-api",
+  "type": "mcp",
+  "version": "1.0.0",
+  "minWorkbuddyVersion": "4.24.0",
+  "examples_zh": [
+    "上传一张 DWG 图纸，识别其中的图框和图签。",
+    "根据图框 frameId，识别建筑专业的房间、门和窗。",
+    "查询一个 DWG 识别任务是否已完成。",
+    "获取建筑专业楼梯详图的结构化结果。"
+  ],
+  "examples_en": [
+    "Upload a DWG drawing and extract its frame and title block info.",
+    "Identify building rooms, doors and windows from a frameId.",
+    "Check whether a DWG recognition task has finished.",
+    "Get structured stair detail results for a building task."
+  ]
+}

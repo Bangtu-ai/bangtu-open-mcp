@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "bangtu-open-api": {
+      "url": "https://mcp.bangtu-ai.com/mcp",
+      "apiKey": "btzlbnfhwr1dkndirgq5h6gy3838b8rh"
+    }
+  }
+}

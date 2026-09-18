@@ -116,11 +116,16 @@
     .tools-intro { max-width: 700px; margin-bottom: 30px; }
     .tools-intro h2 { margin: 0 0 12px; font: 700 29px var(--display); }
     .tools-intro p { margin: 0; color: #4f6075; font-size: 17px; line-height: 1.85; }
+    .tip-box { margin: 24px 0 36px; padding: 20px 24px; border: 1px solid #ecdfc0; border-left: 4px solid #e0a832; background: var(--cream); }
+    .tip-box b { display: block; margin-bottom: 10px; color: #8a5a0f; font: 700 15px var(--display); letter-spacing: .02em; }
+    .tip-box ul { margin: 0; padding: 0; list-style: none; }
+    .tip-box li { position: relative; padding-left: 18px; color: #7a6437; font-size: 14px; line-height: 2; }
+    .tip-box li::before { content: ""; position: absolute; top: 13px; left: 0; width: 7px; height: 7px; border-radius: 50%; background: #e0a832; }
     .tool-list { border-top: 1px solid var(--line); }
-    .tool-row { display: grid; grid-template-columns: 285px 1fr; gap: 32px; padding: 21px 0; border-bottom: 1px solid var(--line); }
-    .tool-name { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; color: var(--blue-dark); font: 700 14px/1.5 var(--display); }
-    .tool-name code { color: var(--blue); font: inherit; }
-    .price-tag { display: inline-flex; align-items: center; min-height: 22px; padding: 0 7px; border: 1px solid #b9d8f5; border-radius: 4px; color: #23649b; background: #eef7ff; font: 600 11px/1 var(--body); white-space: nowrap; }
+    .tool-row { display: grid; grid-template-columns: minmax(320px, 360px) minmax(0, 1fr); gap: 32px; padding: 21px 0; border-bottom: 1px solid var(--line); }
+    .tool-name { display: flex; align-items: center; flex-wrap: nowrap; gap: 9px; min-width: 0; color: var(--blue-dark); font: 700 14px/1.5 var(--display); }
+    .tool-name code { min-width: 0; color: var(--blue); font: inherit; overflow-wrap: anywhere; }
+    .price-tag { display: inline-flex; flex: 0 0 auto; align-items: center; min-height: 22px; padding: 0 7px; border: 1px solid #b9d8f5; border-radius: 4px; color: #23649b; background: #eef7ff; font: 600 11px/1 var(--body); white-space: nowrap; }
     .price-tag.limited { border-color: #f1c58f; color: #a35a16; background: #fff6e8; }
     .tool-desc { color: #56677d; font-size: 14px; line-height: 1.75; }
     .support h2 { margin: 0 0 14px; font: 700 29px var(--display); letter-spacing: -.03em; }
@@ -162,7 +167,7 @@
   <div class="page">
     <header class="wrap topbar">
       <a class="logo" href="https://www.bangtu-ai.com" target="_blank" rel="noreferrer" aria-label="帮图科技"><img src="/logo.png" alt="帮图科技 BANGTU TECHNOLOGY" /></a>
-      <nav class="topnav"><a href="#connect">接入文档</a><a href="https://apidoc.bangtu-ai.com" target="_blank" rel="noreferrer">API 文档</a><span class="live"><i></i> SERVICE ONLINE</span></nav>
+      <nav class="topnav"><a href="#connect">接入文档</a><a href="__BANGTU_APIDOC_URL__" target="_blank" rel="noreferrer">API 文档</a><span class="live"><i></i> SERVICE ONLINE</span></nav>
     </header>
 
     <main>
@@ -171,7 +176,7 @@
           <p class="kicker">BANGTU / OPEN MCP</p>
           <h1>让 AI<br /><em>读懂每一张图纸</em></h1>
           <p class="lede">帮图 MCP，把 DWG 图纸解析能力接入你的 AI 工作流。一个地址，开始连接。</p>
-          <div class="hero-links"><a class="text-link" href="#connect">查看接入方式</a><a class="text-link" href="https://apidoc.bangtu-ai.com" target="_blank" rel="noreferrer">API 文档</a></div>
+          <div class="hero-links"><a class="text-link" href="#connect">查看接入方式</a><a class="text-link" href="__BANGTU_APIDOC_URL__" target="_blank" rel="noreferrer">API 文档</a></div>
         </div>
         <div class="gem-stage" aria-label="MCP gemstone pixel logo">
           <span class="gem-title">DRAWING INTELLIGENCE</span>
@@ -218,7 +223,7 @@
               <pre class="code-box" id="client-config">{
   <span class="key">"mcpServers"</span>: {
     <span class="key">"bangtu-api"</span>: {
-      <span class="key">"url"</span>: <span class="string">"https://mcp.bangtu-ai.com/mcp"</span>,
+      <span class="key">"url"</span>: <span class="string">"__BANGTU_MCP_URL__"</span>,
       <span class="key">"apiKey"</span>: <span class="string api-key-placeholder">"请填入您的apiKey"</span>
     }
   }
@@ -232,8 +237,8 @@
               <pre class="code-box" id="test-config">{
   <span class="key">"mcpServers"</span>: {
     <span class="key">"bangtu-api-test"</span>: {
-      <span class="key">"url"</span>: <span class="string">"https://mcp.bangtu-ai.com/mcp"</span>,
-      <span class="key">"apiKey"</span>: <span class="string">"btzlbnfhwr1dkndirgq5h6gy3838b8rh"</span>
+      <span class="key">"url"</span>: <span class="string">"__BANGTU_MCP_URL__"</span>,
+      <span class="key">"apiKey"</span>: <span class="string">"__BANGTU_DEMO_API_KEY__"</span>
     }
   }
 }</pre>
@@ -249,13 +254,13 @@
           <div>
             <h2>让图纸数据成为 AI 可调用的能力</h2>
             <p>帮图专注工程图纸智能解析，将 DWG 图纸中的图框、构件与专业数据转化为结构化结果。通过 MCP，智能体可以在工程设计、审查与数据提取流程中直接调用这些能力。</p>
-            <a class="doc-link" href="https://apidoc.bangtu-ai.com" target="_blank" rel="noreferrer">查看 API 文档 ↗</a>
+            <a class="doc-link" href="__BANGTU_APIDOC_URL__" target="_blank" rel="noreferrer">查看 API 文档 ↗</a>
           </div>
           <div class="capabilities">
             <div><b>图纸预处理</b><span>上传 DWG，创建可追踪的解析任务。</span></div>
             <div><b>任务管理</b><span>掌握异步任务进度与结果状态。</span></div>
             <div><b>图框识别</b><span>读取图框、图层与基础图纸信息。</span></div>
-            <div><b>结构化解析</b><span>提取建筑专业构件与图纸数据。</span></div>
+            <div><b>结构化解析</b><span>提取建筑、结构、电气、暖通、给排水专业构件与图纸数据。</span></div>
           </div>
         </div>
       </section>
@@ -265,18 +270,38 @@
           <h2>帮图 MCP 工具</h2>
           <p>围绕 DWG 图纸解析任务设计的工具集。智能体可以按“创建任务、等待完成、读取结果”的流程调用，无需自行拼接上游接口路径。</p>
         </div>
+        <aside class="tip-box">
+          <b>重要提示</b>
+          <ul>
+            <li>图纸仅支持 DWG 格式文件。</li>
+            <li>天正（TArch）图纸需先导出为 T3 版本后再上传。</li>
+            <li>图纸中存在外部参照（Xref）时，需先绑定参照后再上传，避免图元缺失。</li>
+          </ul>
+        </aside>
         <div class="tool-list">
-          <div class="tool-row"><div class="tool-name"><code>bangtu_create_dwg_task</code><span class="price-tag">免费</span></div><div class="tool-desc">上传 DWG 图纸并创建基本信息识别任务，返回 taskId。</div></div>
-          <div class="tool-row"><div class="tool-name"><code>bangtu_create_cv_task</code><span class="price-tag limited">限时免费</span></div><div class="tool-desc">根据已完成任务的 frameId 创建建筑专业构件识别任务。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_create_dwg_task</code><span class="price-tag">免费</span></div><div class="tool-desc">上传 DWG 图纸并创建基本信息识别任务，返回 taskId；项目多张图纸需分别上传。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_create_electrical_pre_task</code><span class="price-tag limited">限时免费</span></div><div class="tool-desc">电气预处理任务：一次性传入项目全部电气 frameIds 聚合预处理，返回 electricalPreTaskId。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_create_hvac_pre_task</code><span class="price-tag limited">限时免费</span></div><div class="tool-desc">暖通预处理任务：一次性传入项目全部暖通 frameIds 聚合预处理，返回 heatingPreTaskId。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_create_architecture_task</code><span class="price-tag limited">限时免费</span></div><div class="tool-desc">根据 frameId 创建建筑构件识别任务，无需预处理。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_create_electrical_task</code><span class="price-tag limited">限时免费</span></div><div class="tool-desc">根据 electricalPreTaskId 与 frameId 创建单图框电气构件识别任务。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_create_hvac_task</code><span class="price-tag limited">限时免费</span></div><div class="tool-desc">根据 heatingPreTaskId 与 frameId 创建单图框暖通构件识别任务。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_create_plumbing_task</code><span class="price-tag limited">限时免费</span></div><div class="tool-desc">根据 frameId 创建给排水构件识别任务，无需预处理。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_create_structure_task</code><span class="price-tag limited">限时免费</span></div><div class="tool-desc">根据 frameId 创建结构构件识别任务，无需预处理。</div></div>
           <div class="tool-row"><div class="tool-name"><code>bangtu_get_task_status</code><span class="price-tag">免费</span></div><div class="tool-desc">查询异步任务状态，判断任务是否 RUNNING、SUCCESS 或 FAILED。</div></div>
           <div class="tool-row"><div class="tool-name"><code>bangtu_wait_task</code><span class="price-tag">免费</span></div><div class="tool-desc">在一次调用中按间隔等待任务完成，适合短时间等待场景。</div></div>
           <div class="tool-row"><div class="tool-name"><code>bangtu_get_frame_result</code><span class="price-tag">免费</span></div><div class="tool-desc">获取图框、图签和坐标等 DWG 基础解析结果。</div></div>
-          <div class="tool-row"><div class="tool-name"><code>bangtu_get_arch_result</code><span class="price-tag">免费</span></div><div class="tool-desc">读取建筑专业结构化构件识别结果。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_get_cv_result</code><span class="price-tag">免费</span></div><div class="tool-desc">所有专业共用，读取当前已开放的普通结果和 subFrame 子图框基本信息。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_get_electrical_subframe_result</code><span class="price-tag">免费</span></div><div class="tool-desc">电气专业独立的子图框内容工具，读取指定子图框内的构件结果。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_get_hvac_subframe_result</code><span class="price-tag">免费</span></div><div class="tool-desc">暖通专业独立的子图框内容工具，读取指定子图框内的构件结果。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_get_plumbing_subframe_result</code><span class="price-tag">免费</span></div><div class="tool-desc">给排水专业独立的子图框内容工具，读取指定子图框内的构件结果。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_get_structure_subframe_result</code><span class="price-tag">免费</span></div><div class="tool-desc">结构专业独立的子图框内容工具，读取指定子图框内的构件结果。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_get_frame_entities_download_url</code><span class="price-tag">免费</span></div><div class="tool-desc">按 frameId 获取 30 分钟有效的图元数据下载链接，由调用方自行下载解压。</div></div>
+          <div class="tool-row"><div class="tool-name"><code>bangtu_capture_screenshot_in_frame</code><span class="price-tag">免费</span></div><div class="tool-desc">按 frameId 和 wcsLoc 对图框内指定区域截图，返回 PNG 图片。</div></div>
         </div>
       </section>
     </main>
 
-    <footer class="wrap"><span>© BANGTU TECHNOLOGY / OPEN MCP</span><div class="footer-links"><a href="https://www.bangtu-ai.com" target="_blank" rel="noreferrer">官网 ↗</a><a href="https://apidoc.bangtu-ai.com" target="_blank" rel="noreferrer">API 文档 ↗</a></div></footer>
+    <footer class="wrap"><span>© BANGTU TECHNOLOGY / OPEN MCP</span><div class="footer-links"><a href="https://www.bangtu-ai.com" target="_blank" rel="noreferrer">官网 ↗</a><a href="__BANGTU_APIDOC_URL__" target="_blank" rel="noreferrer">API 文档 ↗</a></div></footer>
   </div>
 
   <script>
