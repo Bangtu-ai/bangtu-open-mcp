@@ -1,5 +1,18 @@
 # bangtu-open-mcp
 
+> [!IMPORTANT]
+> ## 帮图 MCP 在线服务地址
+>
+> | 用途 | 地址 |
+> | --- | --- |
+> | 官网 | **<https://www.bangtu-ai.com>** |
+> | MCP 发布地址 | **<https://mcp.bangtu-ai.com>** |
+> | MCP Endpoint（Streamable HTTP，推荐） | **`https://mcp.bangtu-ai.com/mcp`** |
+> | MCP Endpoint（Legacy SSE，旧客户端兼容） | **`https://mcp.bangtu-ai.com/sse`** |
+> | 健康检查 | `https://mcp.bangtu-ai.com/health` |
+>
+> 直接接入线上服务时，只需要在客户端填写上面的 MCP Endpoint 和您的 `apiKey`。
+
 帮图开放 API 的 MCP Server。它把已发布的 API 契约固化在工具 schema 和服务端路由中：**MCP 运行时不会访问 API 文档页面**，因此文档页面下线不影响已发布接口的 MCP 调用。
 
 当前支持：

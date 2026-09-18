@@ -1,5 +1,16 @@
 # 帮图开放 API MCP 服务介绍
 
+> [!IMPORTANT]
+> ## 帮图 MCP 在线服务地址
+>
+> | 用途 | 地址 |
+> | --- | --- |
+> | 官网 | **<https://www.bangtu-ai.com>** |
+> | MCP 发布地址 | **<https://mcp.bangtu-ai.com>** |
+> | MCP Endpoint（Streamable HTTP，推荐） | **`https://mcp.bangtu-ai.com/mcp`** |
+> | MCP Endpoint（Legacy SSE，旧客户端兼容） | **`https://mcp.bangtu-ai.com/sse`** |
+> | 健康检查 | `https://mcp.bangtu-ai.com/health` |
+
 ## 当前接入与部署说明
 
 ### 正式 MCP 地址
